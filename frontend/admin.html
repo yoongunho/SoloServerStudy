@@ -112,37 +112,73 @@
     height: 100%;
     border: none;
   }
+  #admin-panel { display: none; }
 </style>
 </head>
 <body>
 <div class="panel">
   <div class="panel-title">SIECLE TRAIN · ADMIN</div>
-  <div class="panel-name">트레일러 영상 관리</div>
+  <div class="panel-name">관리자 인증</div>
 
-  <label>관리자 비밀번호</label>
-  <input type="password" id="pw" placeholder="비밀번호 입력">
+  <!-- 비밀번호 확인 화면 -->
+  <div id="login-section">
+    <label>관리자 비밀번호</label>
+    <input type="password" id="pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn" onclick="login()">확인 →</button>
+    <div class="msg err" id="login-msg"></div>
+  </div>
 
-  <label>트레일러 임베드 URL</label>
-  <input type="text" id="url" placeholder="https://www.youtube.com/embed/VIDEO_ID">
+  <!-- 인증 후 관리 패널 -->
+  <div id="admin-panel">
+    <label>트레일러 임베드 URL</label>
+    <input type="text" id="url" placeholder="https://www.youtube.com/embed/VIDEO_ID">
+    <button class="btn" onclick="save()">저장 →</button>
+    <div class="msg" id="save-msg"></div>
 
-  <button class="btn" onclick="save()">저장 →</button>
-  <div class="msg" id="msg"></div>
+    <hr class="divider">
 
-  <hr class="divider">
-
-  <div class="current-label">현재 설정된 URL</div>
-  <div class="current-url" id="current-url">불러오는 중...</div>
-  <div class="preview" id="preview">
-    <iframe id="preview-frame" allowfullscreen></iframe>
+    <div class="current-label">현재 설정된 URL</div>
+    <div class="current-url" id="current-url">불러오는 중...</div>
+    <div class="preview" id="preview">
+      <iframe id="preview-frame" allowfullscreen></iframe>
+    </div>
   </div>
 </div>
 
 <script>
-  async function load() {
+  let verifiedPassword = '';
+
+  async function login() {
+    const pw  = document.getElementById('pw').value.trim();
+    const msg = document.getElementById('login-msg');
+    if (!pw) { msg.textContent = '비밀번호를 입력하세요.'; return; }
+
     try {
-      const res = await fetch('/api/trailer');
+      const res  = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
       const data = await res.json();
-      const url = data.url || '';
+      if (data.ok) {
+        verifiedPassword = pw;
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'block';
+        document.querySelector('.panel-name').textContent = '트레일러 영상 관리';
+        loadTrailer();
+      } else {
+        msg.textContent = data.message || '비밀번호가 틀렸습니다.';
+      }
+    } catch {
+      msg.textContent = '서버 오류가 발생했습니다.';
+    }
+  }
+
+  async function loadTrailer() {
+    try {
+      const res  = await fetch('/api/trailer');
+      const data = await res.json();
+      const url  = data.url || '';
       document.getElementById('current-url').textContent = url || '(없음)';
       if (url) {
         document.getElementById('preview').style.display = 'block';
@@ -154,26 +190,22 @@
   }
 
   async function save() {
-    const pw  = document.getElementById('pw').value.trim();
     const url = document.getElementById('url').value.trim();
-    const msg = document.getElementById('msg');
-
-    if (!pw) { msg.className = 'msg err'; msg.textContent = '비밀번호를 입력하세요.'; return; }
-
-    const btn = document.querySelector('.btn');
+    const msg = document.getElementById('save-msg');
+    const btn = document.querySelector('#admin-panel .btn');
     btn.disabled = true;
 
     try {
       const res  = await fetch('/api/admin/trailer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw, url }),
+        body: JSON.stringify({ password: verifiedPassword, url }),
       });
       const data = await res.json();
       if (data.ok) {
         msg.className = 'msg ok';
         msg.textContent = '저장 완료.';
-        load();
+        loadTrailer();
       } else {
         msg.className = 'msg err';
         msg.textContent = data.message || '오류가 발생했습니다.';
@@ -185,8 +217,6 @@
       btn.disabled = false;
     }
   }
-
-  load();
 </script>
 </body>
 </html>

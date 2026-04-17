@@ -15,6 +15,28 @@ function writeTrailer(data) {
   fs.writeFileSync(TRAILER_FILE, JSON.stringify(data, null, 2));
 }
 
+// ── POST /api/admin/auth ─────────────────────────────────
+// 비밀번호만 검증, 맞으면 ok: true 반환
+export function handleAdminAuth(req, res) {
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { password } = JSON.parse(body);
+      if (password !== ADMIN_PASSWORD) {
+        res.writeHead(401, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, message: '비밀번호가 틀렸습니다.' }));
+        return;
+      }
+      res.writeHead(200, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch {
+      res.writeHead(400, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: '잘못된 요청입니다.' }));
+    }
+  });
+}
+
 // ── GET /api/trailer ─────────────────────────────────────
 // 현재 설정된 트레일러 URL을 메인 페이지에 반환
 export function handleTrailerGet(req, res) {

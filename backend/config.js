@@ -1,17 +1,20 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import 'dotenv/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const PORT         = 443;
-export const HTTP_PORT    = 80;
-export const SSL_CERT     = '/etc/letsencrypt/live/studyserver.mooo.com/fullchain.pem';
-export const SSL_KEY      = '/etc/letsencrypt/live/studyserver.mooo.com/privkey.pem';
+export const PORT           = parseInt(process.env.PORT)       || 443;
+export const HTTP_PORT      = parseInt(process.env.HTTP_PORT)  || 80;
+export const DOMAIN         = process.env.DOMAIN               || 'localhost';
+export const SSL_CERT       = process.env.SSL_CERT;
+export const SSL_KEY        = process.env.SSL_KEY;
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+export const ADMIN_PATH     = process.env.ADMIN_PATH           || '/admin';
+
 export const FRONTEND_DIR = path.join(__dirname, '../frontend');
-export const EMAILS_FILE   = path.join(__dirname, 'registered_emails.json');
-export const TRAILER_FILE  = path.join(__dirname, 'trailer.json');
-export const ADMIN_PASSWORD = 'siecle2026!';
-export const ADMIN_PATH     = '/admin-siecle';
+export const EMAILS_FILE  = path.join(__dirname, 'registered_emails.json');
+export const TRAILER_FILE = path.join(__dirname, 'trailer.json');
 
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
